@@ -65,9 +65,13 @@ async def projects(request: Request, user=Depends(get_current_user)):
     supabase = request.app.state.supabase
     res = await supabase.table("portfolio").select("id, created_at, title, type, stack, repo, live_url, image_url, status, updated_at, description, project_images(image_url)").eq("user", user).execute()
     return JSONResponse(status_code=200, content=res.data)
+
 @app.get("/portfolio/{email}")
 async def projects(request: Request, email: str):
     supabase = request.app.state.supabase
+    res = await supabase.table("profiles").select("email").eq("email", email).execute()
+    if not res.data:
+        return JSONResponse(status=404, content={"user does not exist"})
     res = await supabase.table("profiles").select("id").eq("email", email).execute()
     print(res.data)
     res = await supabase.table("portfolio").select("created_at, title, type, stack, repo, live_url, image_url, status, updated_at, description, project_images(image_url)").eq("user", str(res.data[0]['id'])).execute()
