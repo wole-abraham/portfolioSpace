@@ -65,6 +65,14 @@ async def projects(request: Request, user=Depends(get_current_user)):
     supabase = request.app.state.supabase
     res = await supabase.table("portfolio").select("id, created_at, title, type, stack, repo, live_url, image_url, status, updated_at, description, project_images(image_url)").eq("user", user).execute()
     return JSONResponse(status_code=200, content=res.data)
+@app.get("/projects/{email}")
+async def projects(request: Request, email: str):
+    supabase = request.app.state.supabase
+    res = await supabase.table("profiles").select("id").eq("email", email).execute()
+    print(res.data)
+    res = await supabase.table("portfolio").select("created_at, title, type, stack, repo, live_url, image_url, status, updated_at, description, project_images(image_url)").eq("user", str(res.data[0]['id'])).execute()
+    return JSONResponse(status_code=200, content=res.data)
+
 
 @app.patch("/projects/{project_id}")
 async def update_project(request: Request, payload: Project, project_id:str, user=Depends(get_current_user)):
@@ -83,8 +91,14 @@ async def projects(request: Request, project_id: str, user=Depends(get_current_u
     await supabase.table("portfolio").delete().eq("id", project_id).eq("user", user).execute()
     return Response(status_code=200)
 
-@app.post("/create-profile")
-async def create_profile(request:Request, profile: Profile, user=Depends(get_current_user)):
+# @app.post("/create-profile")
+# async def create_profile(request:Request, profile: Profile, user=Depends(get_current_user)):
+#     supabase = request.app.state.supabase
+#     payload = profile.model_dump()
+#     await supabase.table("profiles").insert(payload).execute()
+
+@app.get("/profile")
+async def profile(request: Request, user=Depends(get_current_user)):
     supabase = request.app.state.supabase
-    payload = profile.model_dump()
-    await supabase.table("profiles").insert(payload).execute()
+    res = await supabase.table("profiles").select("first_name, last_name").eq(id, user).execute()
+    return JSONResponse(status_code=200, content=res.data)
