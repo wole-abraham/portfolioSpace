@@ -6,6 +6,8 @@ from fastapi.exceptions import HTTPException
 from .supabase_client import create_supabase
 from .auth import get_current_user
 from pydantic import BaseModel
+from urllib.parse import unquote
+
 from typing import List, Optional
 
 
@@ -89,12 +91,14 @@ async def update_project(request: Request, payload: Project, project_id:str, use
         raise HTTPException(status_code=405, detail="supabase error")
     return Response(status_code=200)
 
-
-@app.delete("/projects/image/{url}")
-async def delete_image(request: Request, url:str, user=Depends(get_current_user)):
-    supabase = request.state.app.supabase
+@app.delete("/projects/{project_id}/image")
+async def delete_image(request: Request, link: str, project_id:str, user=Depends(get_current_user)):
+    supabase = request.app.state.supabase
     try:
-        await supabase.table('project_images').delete().eq("image_url", url).eq("user_id", user).execute()
+        print(link)
+        print(unquote(link))
+        await supabase.table('project_images').delete().eq("image_url", unquote(link)).eq("user_id", user).eq("project_id",project_id).execute()
+        print(link)
     except Exception:
         print("supabase error")
     return Response(status_code=200)
