@@ -93,7 +93,10 @@ async def update_project(request: Request, payload: Project, project_id:str, use
 @app.delete("/projects/image/{image_url}")
 async def delete_image(request: Request, image_url:str, user=Depends(get_current_user)):
     supabase = request.state.app.supabase
-    await supabase.table('project_images').delete().eq("image_url", image_url).eq("user_id", user).execute()
+    try:
+        await supabase.table('project_images').delete().eq("image_url", image_url).eq("user_id", user).execute()
+    except Exception:
+        print("supabase error")
     return Response(status_code=200)
 
 @app.delete("/projects/{project_id}")
