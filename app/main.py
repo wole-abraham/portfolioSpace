@@ -89,6 +89,13 @@ async def update_project(request: Request, payload: Project, project_id:str, use
         raise HTTPException(status_code=405, detail="supabase error")
     return Response(status_code=200)
 
+
+@app.delete("/projects/image/{image_url}")
+async def delete_image(request: Request, image_url:str, user=Depends(get_current_user)):
+    supabase = request.state.app.supabase
+    await supabase.table('project_images').delete().eq("image_url", image_url).eq("user_id", user).execute()
+    return Response(status_code=200)
+
 @app.delete("/projects/{project_id}")
 async def projects(request: Request, project_id: str, user=Depends(get_current_user)):
     supabase = request.app.state.supabase
