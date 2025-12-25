@@ -68,14 +68,15 @@ async def projects(request: Request, user=Depends(get_current_user)):
     res = await supabase.table("portfolio").select("id, created_at, title, type, stack, repo, live_url, image_url, status, updated_at, description, project_images(image_url)").eq("user", user).execute()
     return JSONResponse(status_code=200, content=res.data)
 
-@app.get("/portfolio/{email}")
-async def projects(request: Request, email: str):
+@app.get("/portfolio/{id}")
+async def projects(request: Request, id: str):
     supabase = request.app.state.supabase
-    res = await supabase.table("profiles").select("email").eq("email", email).execute()
-    if not res.data:
-        return JSONResponse(status=404, content={"error":"user does not exist"})
-    res = await supabase.table("profiles").select("id").eq("email", email).execute()
-    print(res.data)
+    try:
+        res = await supabase.table("profiles").select("profile_id").eq("profile_id", id).execute()
+    except Exception:
+        raise HTTPException(status_code=404, detail="user does not exist")
+    res = await supabase.table("profiles").select("id").eq("profile_id", id).execute()
+    print(res)
     res = await supabase.table("portfolio").select("created_at, title, type, stack, repo, live_url, image_url, status, updated_at, description, project_images(image_url)").eq("user", str(res.data[0]['id'])).execute()
     return JSONResponse(status_code=200, content=res.data)
 
@@ -120,3 +121,33 @@ async def profile(request: Request, user=Depends(get_current_user)):
     supabase = request.app.state.supabase
     res = await supabase.table("profiles").select("first_name, last_name").eq(id, user).execute()
     return JSONResponse(status_code=200, content=res.data)
+
+@app.get("/profile/track/{profile_id}")
+async def track_profile(profile_id: str, request: Request):
+    supabase = request.app.state.supabase
+    try:
+        res = await supabase.rpc("increment_profile_views",{"profile": profile_id}).execute()
+        print(res)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=e.args)
+    
+    TRANSPARENT_PIXEL = (
+    b"\x89PNG\r\n\x1a\n"
+    b"\x00\x00\x00\rIHDR"
+    b"\x00\x00\x00\x01"
+    b"\x00\x00\x00\x01"
+    b"\x08\x06\x00\x00\x00"
+    b"\x1f\x15\xc4\x89"
+    b"\x00\x00\x00\nIDAT"
+    b"\x08\xd7c\xf8\x0f\x00\x01\x01\x01\x00"
+    b"\x18\xdd\x8d\xe1"
+    b"\x00\x00\x00\x00IEND\xaeB`\x82"
+)
+    return Response(
+        content=TRANSPARENT_PIXEL,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
